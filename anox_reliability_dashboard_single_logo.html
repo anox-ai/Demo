@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANOX Reliability Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #071017;
+      color: #eaf2fb;
+      font-family: "Courier New", Courier, monospace;
+      min-height: 100vh;
+    }
+    button, textarea, input { font-family: inherit; }
+    .app { background: #0c1520; min-height: 100vh; }
+    .topbar {
+      height: 54px;
+      background: #091015;
+      border-bottom: 1px solid #172434;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo-img { height: 26px; width: auto; display: block; }
+    .brand-mark {
+      width: 24px; height: 24px;
+      border: 1px solid #1a9d8f;
+      border-radius: 50%;
+      position: relative;
+    }
+    .brand-mark:before, .brand-mark:after {
+      content: "";
+      position: absolute;
+      background: #1a9d8f;
+      opacity: .85;
+    }
+    .brand-mark:before { width: 1px; height: 22px; left: 11px; top: 0; }
+    .brand-mark:after { height: 1px; width: 22px; left: 0; top: 11px; }
+    .brand-name { font-weight: 800; letter-spacing: 3px; font-size: 15px; }
+    .nav { display: flex; align-items: center; gap: 8px; }
+    .nav button {
+      background: transparent;
+      border: 1px solid #1c2e42;
+      color: #9fb6cc;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+    .nav button.active { background: #0a2020; color: #1a9d8f; border-color: #156055; }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%; background: #1c2e42;
+      display: flex; align-items: center; justify-content: center; color: #9fb6cc; font-size: 11px;
+    }
+    .page { padding: 22px 24px 34px; max-width: 1320px; margin: 0 auto; }
+    .hero {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 18px; margin-bottom: 18px;
+    }
+    .eyebrow { font-size: 9px; letter-spacing: 2px; color: #1a9d8f; margin-bottom: 6px; }
+    h1 { font-size: 22px; line-height: 1.2; margin-bottom: 5px; }
+    .sub { color: #9fb6cc; font-size: 11px; line-height: 1.6; }
+    .filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .filter-label { font-size: 9px; letter-spacing: 1px; color: #9fb6cc; margin-right: 4px; }
+    .tab {
+      background: transparent; border: 1px solid #1c2e42; color: #9fb6cc;
+      font-size: 9px; letter-spacing: 1px; padding: 6px 12px; border-radius: 4px; cursor: pointer;
+    }
+    .tab.active { background: #0a2020; border-color: #156055; color: #1a9d8f; }
+    .grid { display: grid; gap: 10px; }
+    .kpis { grid-template-columns: repeat(4, 1fr); margin-bottom: 12px; }
+    .card {
+      background: #111e2d;
+      border: 1px solid #1c2e42;
+      border-radius: 10px;
+      padding: 14px;
+      overflow: hidden;
+    }
+    .card-title { font-size: 9px; letter-spacing: 2px; color: #9fb6cc; margin-bottom: 6px; text-transform: uppercase; }
+    .metric { font-size: 24px; font-weight: 800; line-height: 1; margin-bottom: 7px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 9px; letter-spacing: .5px; padding: 3px 7px; border-radius: 4px; border: 1px solid transparent;
+    }
+    .green { color: #ffffff; background: #147a64; border-color: #2bd0aa; }
+    .amber { color: #ffffff; background: #a85f10; border-color: #f59e0b; }
+    .red { color: #ffffff; background: #9f2d2d; border-color: #ef5b5b; }
+    .blue { color: #ffffff; background: #3556a8; border-color: #7e94d8; }
+    .two-col { grid-template-columns: 1.15fr .85fr; margin-bottom: 12px; }
+    .section-title { font-size: 14px; color: #eaf2fb; font-weight: 700; margin-bottom: 2px; }
+    .section-sub { font-size: 10px; color: #9fb6cc; margin-bottom: 12px; line-height: 1.5; }
+    .risk-row {
+      display: grid; grid-template-columns: 110px 1fr 80px; gap: 12px;
+      align-items: center; padding: 10px 0; border-bottom: 1px solid #172434;
+    }
+    .risk-row:last-child { border-bottom: none; }
+    .risk-name { font-size: 11px; color: #eaf2fb; font-weight: 700; }
+    .risk-detail { font-size: 10px; color: #cfe3f5; line-height: 1.5; }
+    .bar { height: 7px; border-radius: 8px; background: #172434; overflow: hidden; margin-top: 6px; }
+    .bar > div { height: 100%; border-radius: 8px; }
+    .bar.redbar > div { background: #8a2525; }
+    .bar.amberbar > div { background: #8a6015; }
+    .bar.bluebar > div { background: #404080; }
+    .confidence { text-align: right; font-size: 11px; color: #d7e6f5; }
+    .actions-list { display: flex; flex-direction: column; gap: 7px; }
+    .action {
+      display: grid; grid-template-columns: 70px 1fr; gap: 8px;
+      padding: 9px; border: 1px solid #172434; border-radius: 8px; background: #0e1926;
+    }
+    .action p { font-size: 10px; color: #d7e6f5; line-height: 1.5; }
+    .three-col { grid-template-columns: .75fr 1fr 1fr; margin-bottom: 12px; }
+    .donut-wrap { display: flex; align-items: center; gap: 16px; min-height: 175px; }
+    .donut {
+      width: 128px; height: 128px; border-radius: 50%;
+      background: conic-gradient(#8a2525 0 36%, #8a6015 36% 58%, #404080 58% 79%, #1a9d8f 79% 100%);
+      position: relative; flex-shrink: 0;
+    }
+    .donut:after {
+      content: ""; position: absolute; inset: 18px; background: #111e2d; border-radius: 50%; border: 1px solid #1c2e42;
+    }
+    .domain-pie-wrap { display: flex; align-items: center; gap: 18px; min-height: 175px; }
+    .domain-pie {
+      width: 132px; height: 132px; border-radius: 50%;
+      background: conic-gradient(#404080 0 40%, #8a2525 40% 70%, #8a6015 70% 90%, #1a9d8f 90% 100%);
+      position: relative; flex-shrink: 0;
+    }
+    .domain-pie:after {
+      content: ""; position: absolute; inset: 18px; background: #111e2d; border-radius: 50%; border: 1px solid #1c2e42;
+    }
+    .domain-callout { margin-top: 10px; padding: 8px 10px; background:#0e1926; border:1px solid #172434; border-left:3px solid #404080; border-radius:8px; font-size:10px; color:#eaf2fb; line-height:1.5; }
+
+    .legend { display: flex; flex-direction: column; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #cfe3f5; }
+    .dot { width: 8px; height: 8px; border-radius: 2px; }
+    .timeline { width: 100%; height: 170px; }
+    .insight-box {
+      border-left: 3px solid #1a9d8f;
+      background: #0e1926;
+      border-radius: 8px;
+      padding: 11px 12px;
+      margin-bottom: 9px;
+    }
+    .insight-box h3 { font-size: 11px; margin-bottom: 5px; color: #eaf2fb; }
+    .insight-box p { font-size: 10px; line-height: 1.55; color: #cfe3f5; }
+    .mission-card {
+      background: #111e2d; border: 1px solid #1c2e42; border-radius: 10px;
+      margin-bottom: 8px; overflow: hidden;
+    }
+    .mission-head {
+      display: grid; grid-template-columns: 4px 1.2fr .9fr .8fr 110px;
+      gap: 11px; align-items: center; padding: 12px 13px; cursor: pointer;
+    }
+    .stripe { align-self: stretch; border-radius: 3px; }
+    .file { font-size: 11px; color: #eaf2fb; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta { font-size: 9px; color: #9fb6cc; margin-top: 3px; }
+    .root { font-size: 10px; color: #d7e6f5; line-height: 1.4; }
+    .root b { color: #eaf2fb; }
+    .impact { font-size: 10px; line-height: 1.4; color: #d7e6f5; }
+    .mission-detail { display: none; border-top: 1px solid #1c2e42; padding: 12px 14px 14px 28px; }
+    .mission-detail.open { display: block; }
+    .finding { display: grid; grid-template-columns: 72px 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid #172434; }
+    .finding:last-child { border-bottom: none; }
+    .finding-title { font-size: 10px; color: #eaf2fb; font-weight: 700; margin-bottom: 3px; }
+    .finding-text { font-size: 9px; color: #cfe3f5; line-height: 1.55; }
+    .query-grid { grid-template-columns: repeat(3, 1fr); margin-bottom: 10px; }
+    .prompt {
+      background: transparent; border: 1px solid #1c2e42; border-radius: 7px;
+      color: #cfe3f5; font-size: 10px; padding: 9px; text-align: left; cursor: pointer; min-height: 48px;
+    }
+    .prompt:hover { color: #1a9d8f; border-color: #1a8070; }
+    textarea {
+      width: 100%; min-height: 76px; resize: vertical; outline: none;
+      background: #111e2d; border: 1px solid #1c2e42; color: #eaf2fb;
+      border-radius: 9px; padding: 11px; font-size: 12px; line-height: 1.6;
+    }
+    textarea:focus { border-color: #1a8070; }
+    .analyze-row { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; gap: 10px; }
+    .small-note { font-size: 9px; color: #9fb6cc; line-height: 1.4; }
+    .analyze {
+      background: #0f5a52; border: 0; color: #eaf2fb; padding: 9px 22px;
+      border-radius: 6px; cursor: pointer; letter-spacing: 1px; font-size: 11px;
+    }
+    .answer {
+      display: none; margin-top: 12px; background: #111e2d; border: 1px solid #1c2e42;
+      border-left: 3px solid #1a9d8f; border-radius: 9px; padding: 14px;
+      color: #e0ecf7; font-size: 12px; line-height: 1.8; white-space: pre-wrap;
+    }
+    .answer.show { display: block; }
+    @media (max-width: 980px) {
+      .kpis, .two-col, .three-col, .query-grid { grid-template-columns: 1fr; }
+      .hero { align-items: flex-start; flex-direction: column; }
+      .mission-head { grid-template-columns: 4px 1fr; }
+      .mission-head > .root, .mission-head > .impact, .mission-head > .status-cell { grid-column: 2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><img src="anox-logo.png" alt="ANOX logo" class="logo-img"></div>
+      <div class="nav">
+        <button>MISSION LOGS</button>
+        <button class="active">INTELLIGENCE</button>
+        <button>KNOWLEDGE BASE</button>
+        <div class="avatar">A</div>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">DEEPTRACE / RELIABILITY DASHBOARD</div>
+          <h1>Reliability Dashboard</h1>
+        </div>
+        <div class="filters">
+          <span class="filter-label">FILTER:</span>
+          <button class="tab active" data-filter="all">ALL</button>
+          <button class="tab" data-filter="copter">COPTER</button>
+          <button class="tab" data-filter="rover">ROVER</button>
+        </div>
+      </section>
+
+      <section class="grid kpis" id="kpis"></section>
+
+      <section class="grid two-col">
+        <div class="card">
+          <div class="eyebrow">ROOT CAUSE MAP</div>
+          <div class="section-title">Dominant Failure Domains</div>
+          <div class="section-sub">Where failures originate across configuration, hardware, power, and network domains.</div>
+          <div id="riskMap"></div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">PRIORITY QUEUE</div>
+          <div class="section-title">Recommended Actions</div>
+          <div class="section-sub">Auto-prioritized by operational risk and confidence.</div>
+          <div class="actions-list" id="actions"></div>
+        </div>
+      </section>
+
+      <section class="grid three-col">
+        <div class="card">
+          <div class="eyebrow">ISSUE MIX</div>
+          <div class="section-title">Operational Impact</div>
+          <div class="section-sub">Business-level grouping for leadership view.</div>
+          <div class="donut-wrap">
+            <div class="donut"></div>
+            <div class="legend">
+              <div class="legend-item"><span class="dot" style="background:#8a2525"></span> Safety Risk · 36%</div>
+              <div class="legend-item"><span class="dot" style="background:#8a6015"></span> Capacity Loss · 22%</div>
+              <div class="legend-item"><span class="dot" style="background:#404080"></span> Config Exposure · 21%</div>
+              <div class="legend-item"><span class="dot" style="background:#1a9d8f"></span> Clean / Normal · 21%</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">TREND</div>
+          <div class="section-title">Incidents Over Time</div>
+          <div class="section-sub">Safety, capacity, and configuration signals across missions.</div>
+          <svg class="timeline" id="timeline" viewBox="0 0 330 170" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="card">
+          <div class="eyebrow">SYSTEM INSIGHTS</div>
+          <div class="section-title">What the Knowledge Base Knows</div>
+          <div class="section-sub">Patterns extracted across mission reports.</div>
+          <div class="insight-box">
+            <h3>Recurring asset-level failure</h3>
+            <p>Board #56 appears in two crash-related logs. This should be escalated as a recurring asset-level failure, not treated as two isolated missions.</p>
+          </div>
+          <div class="insight-box">
+            <h3>Battery degradation pattern</h3>
+            <p>Mission 3 used only 21% of nominal capacity before failsafe. The probable root cause is voltage sag under 50–70A load.</p>
+          </div>
+          <div class="insight-box">
+            <h3>Configuration safety exposure</h3>
+            <p>Configuration is the most recurring failure type: GPS-less arming with geofence, disabled safety switch, and rover arming checks off.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-bottom:12px;">
+        <div class="eyebrow">MISSION KNOWLEDGE BASE</div>
+        <div class="section-title">Root Cause Reports</div>
+        <div class="section-sub">Each mission is stored as structured intelligence: root cause, confidence, impact, evidence, and recommended action.</div>
+        <div id="missions"></div>
+      </section>
+
+      <section class="card">
+        <div class="eyebrow">AI QUERY</div>
+        <div class="section-title">Ask Reliability Intelligence</div>
+        <div class="section-sub">Query mission reports by root cause, failure domain, impact, and recommended action.</div>
+        <div class="grid query-grid">
+          <button class="prompt" data-q="What are the top root causes across the reliability dataset, and what should we fix first?">Top root causes and first fixes?</button>
+          <button class="prompt" data-q="Which assets are highest risk and why?">Which assets are highest risk?</button>
+          <button class="prompt" data-q="Where are we losing mission capacity?">Where are we losing capacity?</button>
+        </div>
+        <textarea id="query" placeholder="Example: Which failure domains are most common, and what should we fix first?"></textarea>
+        <div class="analyze-row">
+          <div class="small-note">Demo mode: responses are generated from the embedded reliability knowledge base.</div>
+          <button class="analyze" id="analyzeBtn">▶ ANALYZE</button>
+        </div>
+        <div class="answer" id="answer"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const missions = [
+      {
+        id: "m1", type: "copter", vehicle: "Board #56", file: "00000021 (1)_20260426-095026_95ad4518.BIN", date: "2026-04-26",
+        status: "NOT SAFE", color: "#8a2525", domain: "Control / Mechanical", confidence: 90,
+        root: "Loss of attitude control ending in crash-disarm; initiating cause unresolved but narrowed to mechanical, propulsion, external impact, or pilot-induced event.",
+        impact: "Asset grounded · recurring (2 incidents)",
+        evidence: [
+          ["CRITICAL", "Crash-disarm", "Attitude error reached 153° with acceleration near 0.1 m/s² at t=394.5s."],
+          ["WARNING", "Root cause not fully isolated", "Further full-log and hardware inspection required before return to operation."],
+          ["WARNING", "Same asset pattern", "Board #56 also appears in a prior crash/tipover report."]
+        ]
+      },
+      {
+        id: "m2", type: "copter", vehicle: "Board #56", file: "00000021_20260303-072009_00fdf4f9.BIN", date: "2026-03-03",
+        status: "CAUTION", color: "#8a6015", domain: "Impact / Configuration", confidence: 95,
+        root: "Physical crash or tipover after otherwise healthy flight; telemetry does not indicate brownout, thrust loss, or instability as primary cause.",
+        impact: "Inspection required · recurring asset context",
+        evidence: [
+          ["CRITICAL", "Crashcheck autodisarm", "System message showed AngErr=153 and Accel=0.1; vibration spike at impact."],
+          ["WARNING", "GPS-less arming risk", "ARMING_NEED_LOC=0 while geofence is enabled."],
+          ["WARNING", "Safety switch disabled", "BRD_SAFETY_DEFLT=0 reduces ground safety margin."]
+        ]
+      },
+      {
+        id: "m3", type: "copter", vehicle: "Board #1136", file: "Mission 3_20260209-135733_da667c81.bin", date: "2026-02-09",
+        status: "CAUTION", color: "#8a6015", domain: "Power", confidence: 78,
+        root: "Battery voltage sag under 50–70A load; likely aged, undersized, or poorly matched battery pack combined with voltage-only failsafe logic.",
+        impact: "~79% mission capacity lost · one-off critical inefficiency",
+        evidence: [
+          ["CRITICAL", "Early battery failsafe", "Failsafe triggered at 21.37V with only 1,268 / 6,000 mAh used."],
+          ["WARNING", "Voltage-only protection", "BATT_LOW_MAH=0 and BATT_CRT_MAH=0 leave no capacity-based threshold."],
+          ["WARNING", "Transient GPS/compass glitch", "Glitch appeared around t=184s and cleared around t=194s."]
+        ]
+      },
+      {
+        id: "m4", type: "rover", vehicle: "Navigator", file: "00000084.BIN", date: "2026-01-15",
+        status: "NOT SAFE", color: "#8a2525", domain: "Configuration", confidence: 90,
+        root: "All arming safety checks are disabled, allowing operation without normal sensor, calibration, or safety validation.",
+        impact: "Safety exposure · systemic configuration risk",
+        evidence: [
+          ["CRITICAL", "Arming checks disabled", "ARMING_CHECK=0 bypasses all pre-arm validation."],
+          ["WARNING", "Battery protection unset", "BATT_LOW_VOLT and BATT_CRT_VOLT are both set to 0."],
+          ["INFO", "Idle session", "Log appears disarmed/idle, so under-load behavior is unknown."]
+        ]
+      }
+    ];
+
+    const actions = [
+      ["IMMEDIATE", "Ground and inspect Board #56. Two crash-related reports point to repeated asset-level risk."],
+      ["IMMEDIATE", "Restore rover ARMING_CHECK and validate pre-arm messages before any operation."],
+      ["HIGH", "Bench-test or replace Board #1136 battery pack. Current mission capacity is materially reduced."],
+      ["HIGH", "Introduce fleet-wide safety configuration baseline: GPS arming, safety switch, battery thresholds."],
+      ["MEDIUM", "Add recurring root cause review: recurring failures should escalate from mission issue to asset risk."]
+    ];
+
+    let filter = "all";
+
+    function visibleMissions() {
+      return filter === "all" ? missions : missions.filter(m => m.type === filter);
+    }
+
+    function badgeClass(label) {
+      if (label === "IMMEDIATE" || label === "CRITICAL" || label === "NOT SAFE") return "badge red";
+      if (label === "HIGH" || label === "WARNING" || label === "CAUTION") return "badge amber";
+      if (label === "INFO") return "badge blue";
+      return "badge green";
+    }
+
+    function renderKPIs() {
+      const ms = visibleMissions();
+      const total = filter === "all" ? 12 : filter === "copter" ? 10 : 2;
+      const incidents = ms.length;
+      const notSafe = ms.filter(m => m.status === "NOT SAFE").length;
+      const performance = Math.round((total-incidents)/total*100);
+      const capacityLoss = filter === "rover" ? "—" : "79%";
+      document.getElementById("kpis").innerHTML = `
+        <div class="card"><div class="card-title">Missions Analyzed</div><div class="metric" style="color:#eaf2fb">${total}</div><span class="badge green">current dataset</span></div>
+        <div class="card" style="border-top:2px solid #6a4a10"><div class="card-title">Incidents Detected</div><div class="metric" style="color:#f5b762">${incidents}</div><span class="badge amber">${incidents} / ${total} missions</span></div>
+        <div class="card" style="border-top:2px solid #6a2020"><div class="card-title">Not Safe</div><div class="metric" style="color:#ff8a80">${notSafe}</div><span class="badge red">grounded / do not operate</span></div>
+        <div class="card"><div class="card-title">Performance</div><div class="metric" style="color:#1a9d8f">${performance}%</div><span class="badge blue">clean mission ratio</span></div>
+      `;
+    }
+
+    function renderRiskMap() {
+      document.getElementById("riskMap").innerHTML = `
+        <div class="domain-pie-wrap">
+          <div class="domain-pie"></div>
+          <div class="legend">
+            <div class="legend-item"><span class="dot" style="background:#404080"></span> Configuration / Safety · 40%</div>
+            <div class="legend-item"><span class="dot" style="background:#8a2525"></span> Hardware / Mechanical · 30%</div>
+            <div class="legend-item"><span class="dot" style="background:#8a6015"></span> Power System · 20%</div>
+            <div class="legend-item"><span class="dot" style="background:#1a9d8f"></span> Network / Connectivity · 10%</div>
+          </div>
+        </div>
+        <div class="domain-callout"><b>Most recurring failure:</b> Configuration / Safety — repeated safety-default and arming-check issues across assets.</div>
+      `;
+    }
+
+    function renderActions() {
+      document.getElementById("actions").innerHTML = actions.map(a => `
+        <div class="action"><span class="${badgeClass(a[0])}">${a[0]}</span><p>${a[1]}</p></div>
+      `).join("");
+    }
+
+    function renderTimeline() {
+      const svg = document.getElementById("timeline");
+      const months = ["Jan", "Feb", "Mar", "Apr"];
+      const series = [
+        { name: "Safety", color: "#8a2525", points: [0, 0, 1, 1] },
+        { name: "Capacity", color: "#8a6015", points: [0, 1, 0, 0] },
+        { name: "Config", color: "#404080", points: [1, 0, 1, 1] }
+      ];
+      let out = "";
+      for (let y=0; y<=2; y++) {
+        const yp = 18 + (2-y) * 55;
+        out += `<line x1="30" y1="${yp}" x2="320" y2="${yp}" stroke="#172434" stroke-width="1"/><text x="20" y="${yp+3}" fill="#3e5668" font-size="8" text-anchor="end">${y}</text>`;
+      }
+      months.forEach((m,i)=>{
+        const x = 40 + i*86;
+        out += `<text x="${x}" y="160" fill="#3e5668" font-size="9" text-anchor="middle">${m}</text>`;
+      });
+      series.forEach(s => {
+        const pts = s.points.map((p,i)=> `${40+i*86},${128-p*55}`).join(" ");
+        out += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+        s.points.forEach((p,i)=> out += `<circle cx="${40+i*86}" cy="${128-p*55}" r="3" fill="${s.color}"/>`);
+      });
+      svg.innerHTML = out;
+    }
+
+    function renderMissions() {
+      const list = visibleMissions();
+      document.getElementById("missions").innerHTML = list.map(m => `
+        <div class="mission-card">
+          <div class="mission-head" data-open="${m.id}">
+            <div class="stripe" style="background:${m.color}"></div>
+            <div><div class="file">${m.file}</div><div class="meta">${m.date} · ${m.vehicle} · ${m.domain}</div></div>
+            <div class="root"><b>Most probable root cause:</b><br>${m.root}</div>
+            <div class="impact"><b>Impact:</b><br>${m.impact}</div>
+            <div class="status-cell"><span class="${badgeClass(m.status)}">${m.status}</span><div class="meta">${m.confidence}% confidence</div></div>
+          </div>
+          <div class="mission-detail" id="detail-${m.id}">
+            ${m.evidence.map(e => `
+              <div class="finding"><span class="${badgeClass(e[0])}">${e[0]}</span><div><div class="finding-title">${e[1]}</div><div class="finding-text">${e[2]}</div></div></div>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+      document.querySelectorAll(".mission-head").forEach(el => {
+        el.onclick = () => document.getElementById(`detail-${el.dataset.open}`).classList.toggle("open");
+      });
+    }
+
+    function renderAll() {
+      renderKPIs(); renderRiskMap(); renderActions(); renderTimeline(); renderMissions();
+    }
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        filter = btn.dataset.filter;
+        renderAll();
+      };
+    });
+
+    document.querySelectorAll(".prompt").forEach(btn => {
+      btn.onclick = () => { document.getElementById("query").value = btn.dataset.q; };
+    });
+
+    document.getElementById("analyzeBtn").onclick = () => {
+      const q = document.getElementById("query").value.trim().toLowerCase();
+      const answer = document.getElementById("answer");
+      let text = "The highest-priority root cause is repeated crash behavior on Board #56. This is not just a mission-level incident: the same asset appears in two crash-related reports, so it should remain grounded until hardware, propulsion, and full-log review are completed. The clearest efficiency loss is Board #1136, where battery failsafe occurred after only 21% of nominal capacity was used, pointing to voltage sag under load. The highest configuration exposure is the rover with ARMING_CHECK=0, because it can bypass normal pre-arm validation. First actions: ground Board #56, restore safety checks, then bench-test or replace the battery pack on Board #1136.";
+      if (q.includes("capacity") || q.includes("battery")) {
+        text = "The main capacity loss is the battery case on Board #1136. The mission used only 1,268 mAh out of a 6,000 mAh pack before failsafe, so around 79% of nominal capacity was not operationally usable. The most probable root cause is voltage sag under 50–70A load, likely caused by an aged, undersized, or poorly matched battery pack. The decision is to bench-test or replace the pack and add mAh-based failsafe thresholds so voltage sag does not create misleading early failsafes.";
+      } else if (q.includes("asset") || q.includes("risk")) {
+        text = "The highest-risk asset is Board #56. It appears in two crash-related reports, which turns the issue from a single crash into an asset-level reliability concern. The reports do not prove one exact initiating cause, but they narrow the likely domains to mechanical, propulsion, impact, or pilot/environmental factors. Until inspection and full-log review are complete, this asset should remain grounded.";
+      } else if (q.includes("root")) {
+        text = "The top failure domains are: Control/Stability on Board #56, Power System on Board #1136, and Configuration/Safety exposure on the rover. The battery case has the cleanest causal chain: high current load caused voltage sag, which triggered failsafe after only 21% capacity use. The crash case has high confidence that a crash/tipover occurred, but lower certainty on the initiating cause. The system should therefore separate confirmed root causes from high-confidence hypotheses.";
+      }
+      answer.textContent = text;
+      answer.classList.add("show");
+    };
+
+    renderAll();
+  </script>
+</body>
+</html>
